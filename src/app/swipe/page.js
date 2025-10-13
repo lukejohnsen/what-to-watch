@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { fetchPopularMovies } from "../../lib/tmdb";
 import Image from "next/image";
+import { useSession, signIn, signOut } from "next-auth/react";
 
 export default function SwipePage() {
   const [movies, setMovies] = useState([]);
@@ -12,7 +13,8 @@ export default function SwipePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch movies when component loads
+  const { data: session, status } = useSession();
+
   useEffect(() => {
     async function loadMovies() {
       try {
@@ -31,7 +33,6 @@ export default function SwipePage() {
     loadMovies();
   }, []);
 
-  // Your task: Add a function to handle button clicks
   const handleChoice = (choice) => {
     const currentMovie = movies[currentIndex];
 
@@ -124,7 +125,7 @@ export default function SwipePage() {
               marginTop: "20px",
             }}
           >
-            🔄 Start Over
+            Start Over
           </button>
         </div>
       </div>
@@ -134,7 +135,9 @@ export default function SwipePage() {
   const currentMovie = movies[currentIndex];
 
   return (
-    <div style={{ textAlign: "center", padding: "20px", backgroundColor: "black" }}>
+    <div
+      style={{ textAlign: "center", padding: "20px", backgroundColor: "black" }}
+    >
       <h1 style={{ color: "white" }}>Movie Matcher</h1>
       <div
         style={{
@@ -153,10 +156,10 @@ export default function SwipePage() {
           height={450}
           style={{ width: "100%", height: "auto", borderRadius: "4px" }}
         />
-        <h2>{currentMovie.title}</h2>
-        <p>{currentMovie.year}</p>
+        <h2 className="text-black">{currentMovie.title}</h2>
+        <p className="text-black">{currentMovie.year}</p>
 
-        {/* Your task: Add the buttons here */}
+{session ? (
         <div
           style={{
             marginTop: "20px",
@@ -176,7 +179,7 @@ export default function SwipePage() {
               cursor: "pointer",
             }}
           >
-            👎 Pass
+            Pass
           </button>
           <button
             onClick={() => handleChoice("like")}
@@ -189,9 +192,12 @@ export default function SwipePage() {
               cursor: "pointer",
             }}
           >
-            👍 Like
+            Like
           </button>
-        </div>
+        </div>) : (
+          <p style={{ color: "red", marginTop: "20px" }}>Please sign in to start matching movies!</p>
+        )
+}
       </div>
     </div>
   );
