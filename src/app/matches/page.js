@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
+
 export default function MatchesPage() {
   const [likedMovies, setLikedMovies] = useState([]);
 
@@ -22,19 +23,12 @@ export default function MatchesPage() {
 
   if (likedMovies.length === 0) {
     return (
-      <div style={{ textAlign: "center", padding: "40px" }}>
-        <h1>❤️ My Matches</h1>
+      <div className='text-center p-10'>
+        <h1>My Matches</h1>
         <p>No movies liked yet!</p>
         <Link
           href="/swipe"
-          style={{
-            display: "inline-block",
-            padding: "10px 20px",
-            backgroundColor: "#007bff",
-            color: "white",
-            textDecoration: "none",
-            borderRadius: "4px",
-          }}
+          className="px-[20px] py-[10px] bg-[#007bff] text-white rounded"
         >
           Start Swiping Movies
         </Link>
@@ -43,29 +37,18 @@ export default function MatchesPage() {
   }
 
   return (
-    <div style={{ padding: "20px", backgroundColor: "black" }}>
-      <h1 style={{ textAlign: "center", color: "white" }}>
-        ❤️ My Matches ({likedMovies.length})
+    <div className='p-5 bg-black'>
+      <h1 className='text-center text-white'>
+        My Matches ({likedMovies.length})
       </h1>
 
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-          gap: "20px",
-          marginTop: "20px",
-        }}
+      className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5 mt-5"
       >
         {likedMovies.map((movie) => (
           <div
             key={movie.id}
-            style={{
-              border: "1px solid #ddd",
-              borderRadius: "8px",
-              padding: "15px",
-              textAlign: "center",
-                backgroundColor: "white",
-            }}
+            className="border border-gray-300 rounded-lg p-4 text-center bg-white"
           >
             <Image
               src={movie.poster}
@@ -74,21 +57,17 @@ export default function MatchesPage() {
               height={225}
               style={{ width: "100%", height: "auto", borderRadius: "4px" }}
             />
-            <h3 style={{ margin: "10px 0 5px 0" }}>{movie.title}</h3>
-            <p style={{ margin: 0, color: "#666" }}>{movie.year}</p>
+            <h3 className="text-black" style={{ margin: "10px 0 5px 0" }}>
+              {movie.title}
+            </h3>
+            <p className="text-black" style={{ margin: 0, color: "#666" }}>
+              {movie.year}
+            </p>
             <button
               onClick={() => deleteMovie(movie.id)}
-              style={{
-                marginTop: "10px",
-                padding: "5px 10px",
-                backgroundColor: "#ff4757",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
+              className="mt-2 px-3 py-1 bg-red-600 text-white rounded"
             >
-              ❌ Remove
+              Remove
             </button>
           </div>
         ))}
@@ -97,14 +76,7 @@ export default function MatchesPage() {
       <div style={{ textAlign: "center", marginTop: "30px" }}>
         <Link
           href="/swipe"
-          style={{
-            display: "inline-block",
-            padding: "10px 20px",
-            backgroundColor: "#28a745",
-            color: "white",
-            textDecoration: "none",
-            borderRadius: "4px",
-          }}
+          className="inline-block px-5 py-2 bg-green-600 text-white rounded"
         >
           Discover More Movies
         </Link>
