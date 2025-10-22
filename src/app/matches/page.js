@@ -52,7 +52,7 @@ export default function MatchesPage() {
     );
   }
 
-  // Error state
+
   if (error) {
     return (
       <div className='text-center p-10'>
@@ -63,7 +63,7 @@ export default function MatchesPage() {
     );
   }
 
-  // Empty state
+
   if (likedMovies.length === 0) {
     return (
       <div className='text-center p-10'>
@@ -79,7 +79,6 @@ export default function MatchesPage() {
     );
   }
 
-  // Main UI with liked movies
   return (
     <div className='p-5 bg-black'>
       <h1 className='text-center text-white'>

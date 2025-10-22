@@ -21,7 +21,6 @@ export default function SwipePage() {
 
   const { data: session } = useSession();
 
-  // Load movies on mount
   useEffect(() => {
     async function loadMovies() {
       try {
@@ -40,7 +39,6 @@ export default function SwipePage() {
     loadMovies();
   }, [controller]);
 
-  // Handle like
   const handleLike = async () => {
     try {
       await controller.handleLike();
@@ -57,7 +55,6 @@ export default function SwipePage() {
     }
   };
 
-  // Handle dislike
   const handleDislike = () => {
     controller.handleDislike();
     const nextMovie = controller.getCurrentMovie();
@@ -69,14 +66,14 @@ export default function SwipePage() {
     }
   };
 
-  // Handle reset
+
   const handleReset = () => {
     controller.reset();
     setCurrentMovie(controller.getCurrentMovie());
     setShowPopup(false);
   };
 
-  // Loading state
+
   if (loading) {
     return (
       <div style={{ textAlign: "center", padding: "20px" }}>
@@ -86,7 +83,7 @@ export default function SwipePage() {
     );
   }
 
-  // Error state
+
   if (error) {
     return (
       <div style={{ textAlign: "center", padding: "20px", backgroundColor: "black" }}>
@@ -97,7 +94,7 @@ export default function SwipePage() {
     );
   }
 
-  // No movies state
+
   if (!currentMovie && !showPopup) {
     return (
       <div style={{ textAlign: "center", padding: "20px", backgroundColor: "black" }}>
@@ -107,7 +104,7 @@ export default function SwipePage() {
     );
   }
 
-  // All done popup
+
   if (showPopup) {
     const progress = controller.getProgress();
     return (
@@ -155,7 +152,7 @@ export default function SwipePage() {
     );
   }
 
-  // Main swipe UI
+
   return (
     <div
       style={{ textAlign: "center", padding: "20px", backgroundColor: "black" }}
