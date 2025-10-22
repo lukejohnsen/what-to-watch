@@ -3,24 +3,67 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-
+import LikedMoviesService from "../../services/LikedMoviesService.js";
 
 export default function MatchesPage() {
   const [likedMovies, setLikedMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const [likedMoviesService] = useState(() => new LikedMoviesService());
 
   useEffect(() => {
-    const saved = localStorage.getItem("likedMovies");
-    if (saved) {
-      setLikedMovies(JSON.parse(saved));
+    async function loadLikedMovies() {
+      try {
+        setLoading(true);
+        const movies = await likedMoviesService.getLikedMovies();
+        setLikedMovies(movies);
+        setError(null);
+      } catch (err) {
+        setError("Failed to load liked movies. Please try again.");
+        console.error("Error loading liked movies:", err);
+      } finally {
+        setLoading(false);
+      }
     }
-  }, []);
 
-  const deleteMovie = (id) => {
-    const updated = likedMovies.filter((m) => m.id !== id);
-    setLikedMovies(updated);
-    localStorage.setItem("likedMovies", JSON.stringify(updated));
+    loadLikedMovies();
+  }, [likedMoviesService]);
+
+
+  const deleteMovie = async (movieId) => {
+    try {
+      await likedMoviesService.unlikeMovie(movieId);
+
+      setLikedMovies(likedMovies.filter((m) => m.id !== movieId));
+    } catch (err) {
+      setError("Failed to remove movie. Please try again.");
+      console.error("Error removing movie:", err);
+    }
   };
 
+
+  if (loading) {
+    return (
+      <div className='text-center p-10'>
+        <h1>My Matches</h1>
+        <p>Loading your liked movies...</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className='text-center p-10'>
+        <h1>My Matches</h1>
+        <p style={{ color: "red" }}>{error}</p>
+        <button onClick={() => window.location.reload()}>Try Again</button>
+      </div>
+    );
+  }
+
+  // Empty state
   if (likedMovies.length === 0) {
     return (
       <div className='text-center p-10'>
@@ -36,6 +79,7 @@ export default function MatchesPage() {
     );
   }
 
+  // Main UI with liked movies
   return (
     <div className='p-5 bg-black'>
       <h1 className='text-center text-white'>
@@ -43,7 +87,7 @@ export default function MatchesPage() {
       </h1>
 
       <div
-      className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5 mt-5"
+        className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5 mt-5"
       >
         {likedMovies.map((movie) => (
           <div

@@ -1,26 +1,33 @@
 'use client'
 import { useState, useEffect } from "react";
-import { fetchPopularMovies } from "../../lib/tmdb";
 import Image from "next/image";
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import TMDBService from "../../services/TMDBService.js";
+import LikedMoviesService from "../../services/LikedMoviesService.js";
+import MovieSwipeController from "../../controllers/MovieSwipeController.js";
 
 export default function SwipePage() {
-  const [movies, setMovies] = useState([]);
-  const [likedMovies, setLikedMovies] = useState([]);
-  const [dislikedMovies, setDislikedMovies] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [showPopup, setShowPopup] = useState(false);
+
+  const [controller] = useState(() => {
+    const tmdbService = new TMDBService();
+    const likedMoviesService = new LikedMoviesService();
+    return new MovieSwipeController(tmdbService, likedMoviesService);
+  });
+
+  const [currentMovie, setCurrentMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showPopup, setShowPopup] = useState(false);
 
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
 
+  // Load movies on mount
   useEffect(() => {
     async function loadMovies() {
       try {
         setLoading(true);
-        const movies = await fetchPopularMovies();
-        setMovies(movies);
+        await controller.loadMovies();
+        setCurrentMovie(controller.getCurrentMovie());
         setError(null);
       } catch (err) {
         setError("Failed to load movies. Please check your API key.");
@@ -31,62 +38,78 @@ export default function SwipePage() {
     }
 
     loadMovies();
-  }, []);
+  }, [controller]);
 
-  const handleChoice = (choice) => {
-    const currentMovie = movies[currentIndex];
+  // Handle like
+  const handleLike = async () => {
+    try {
+      await controller.handleLike();
+      const nextMovie = controller.getCurrentMovie();
 
-    if (choice === "like") {
-      setLikedMovies([...likedMovies, currentMovie]);
-
-      localStorage.setItem("likedMovies", JSON.stringify([...likedMovies, currentMovie]));
-    } else {
-      setDislikedMovies([...dislikedMovies, currentMovie]);
+      if (!nextMovie) {
+        setShowPopup(true);
+      } else {
+        setCurrentMovie(nextMovie);
+      }
+    } catch (err) {
+      setError("Failed to save liked movie. Please try again.");
+      console.error("Error liking movie:", err);
     }
-
-    const nextIndex = currentIndex + 1;
-
-    if (nextIndex >= movies.length) {
-      setShowPopup(true);
-    }
-
-    setCurrentIndex(nextIndex);
   };
 
+  // Handle dislike
+  const handleDislike = () => {
+    controller.handleDislike();
+    const nextMovie = controller.getCurrentMovie();
+
+    if (!nextMovie) {
+      setShowPopup(true);
+    } else {
+      setCurrentMovie(nextMovie);
+    }
+  };
+
+  // Handle reset
   const handleReset = () => {
-    setCurrentIndex(0);
+    controller.reset();
+    setCurrentMovie(controller.getCurrentMovie());
     setShowPopup(false);
   };
 
-    if (loading) {
-      return (
-        <div style={{ textAlign: "center", padding: "20px" }}>
-          <h1>Movie Matcher</h1>
-          <p>Loading amazing movies for you...</p>
-        </div>
-      );
-    }
+  // Loading state
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center", padding: "20px" }}>
+        <h1>Movie Matcher</h1>
+        <p>Loading amazing movies for you...</p>
+      </div>
+    );
+  }
 
-    if (error) {
-      return (
-        <div style={{ textAlign: "center", padding: "20px", backgroundColor: "black" }}>
-          <h1>Movie Matcher</h1>
-          <p style={{ color: "red" }}>{error}</p>
-          <button onClick={() => window.location.reload()}>Try Again</button>
-        </div>
-      );
-    }
+  // Error state
+  if (error) {
+    return (
+      <div style={{ textAlign: "center", padding: "20px", backgroundColor: "black" }}>
+        <h1>Movie Matcher</h1>
+        <p style={{ color: "red" }}>{error}</p>
+        <button onClick={() => window.location.reload()}>Try Again</button>
+      </div>
+    );
+  }
 
-    if (movies.length === 0) {
-      return (
-        <div style={{ textAlign: "center", padding: "20px", backgroundColor: "black" }}>
-          <h1>Movie Matcher</h1>
-          <p>No movies found!</p>
-        </div>
-      );
-    }
+  // No movies state
+  if (!currentMovie && !showPopup) {
+    return (
+      <div style={{ textAlign: "center", padding: "20px", backgroundColor: "black" }}>
+        <h1>Movie Matcher</h1>
+        <p>No movies found!</p>
+      </div>
+    );
+  }
 
+  // All done popup
   if (showPopup) {
+    const progress = controller.getProgress();
     return (
       <div
         style={{
@@ -110,7 +133,7 @@ export default function SwipePage() {
           }}
         >
           <h1>🎬 All Done!</h1>
-          <p>You&apos;ve seen all {movies.length} movies in this collection.</p>
+          <p>You&apos;ve seen all {progress.total} movies in this collection.</p>
           <p>Check back soon for more movies to discover!</p>
 
           <button
@@ -132,8 +155,7 @@ export default function SwipePage() {
     );
   }
 
-  const currentMovie = movies[currentIndex];
-
+  // Main swipe UI
   return (
     <div
       style={{ textAlign: "center", padding: "20px", backgroundColor: "black" }}
@@ -159,45 +181,45 @@ export default function SwipePage() {
         <h2 className="text-black">{currentMovie.title}</h2>
         <p className="text-black">{currentMovie.year}</p>
 
-{session ? (
-        <div
-          style={{
-            marginTop: "20px",
-            display: "flex",
-            gap: "10px",
-            justifyContent: "center",
-          }}
-        >
-          <button
-            onClick={() => handleChoice("dislike")}
+        {session ? (
+          <div
             style={{
-              padding: "10px 20px",
-              backgroundColor: "#ff4757",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
+              marginTop: "20px",
+              display: "flex",
+              gap: "10px",
+              justifyContent: "center",
             }}
           >
-            Pass
-          </button>
-          <button
-            onClick={() => handleChoice("like")}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#2ed573",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Like
-          </button>
-        </div>) : (
+            <button
+              onClick={handleDislike}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: "#ff4757",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Pass
+            </button>
+            <button
+              onClick={handleLike}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: "#2ed573",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Like
+            </button>
+          </div>
+        ) : (
           <p style={{ color: "red", marginTop: "20px" }}>Please sign in to start matching movies!</p>
-        )
-}
+        )}
       </div>
     </div>
   );
